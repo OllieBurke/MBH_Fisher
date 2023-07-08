@@ -1,6 +1,5 @@
 import os
 import numpy as np
-import cupy as cp
 import matplotlib.pyplot as plt
 from bbhx.waveformbuild import BBHWaveformFD
 from fishy_utils import MBH_f, build_fish_matrix
@@ -12,8 +11,9 @@ N_channels = 2
 channel = ["A","E"]
 sens_fn_calls = ["noisepsd_AE","noisepsd_AE"]
 
-use_gpu = True
+use_gpu = False
 if use_gpu:
+    import cupy as cp
     xp = cp
 else:
     xp = np
@@ -28,7 +28,7 @@ a2 = 0.4
 inc = np.pi/3.
 
 dist_Gpc = 20.0 #18e3  * PC_SI * 1e6 # 3e3 in Mpc
-phi_ref = 0.0 # phase at f_ref
+phi_ref = np.pi # phase at f_ref
 lam = np.pi/5.  # ecliptic longitude
 beta = np.pi/4.  # ecliptic latitude
 psi = np.pi/6.  # polarization angle
@@ -41,7 +41,7 @@ params = np.array([M, q, a1, a2, inc, dist_Gpc, phi_ref, lam,beta,psi,t_ref])
 N_params = len(params)
 
 delta_f = 1e-5                  
-freq = cp.arange(1e-4,1e-1,delta_f)
+freq = xp.arange(1e-4,1e-1,delta_f)
 
 kwargs = {"freq" : freq,
           "delta_f" : delta_f,
@@ -69,6 +69,8 @@ gamma_AE = build_fish_matrix(*params, **kwargs)
 
 param_cov_AE = np.linalg.inv(gamma_AE)
 
+os.chdir("FM_results")
+np.save("Param_Cov_AE.npy",param_cov_AE)
 delta_theta = np.sqrt(np.diag(param_cov_AE))
 list_params = ['M','q','a1','a2','inc', 'dist_Gpc', 'phi_ref', 'lambda', 'beta', 'psi', 't_ref']
 

@@ -1,13 +1,13 @@
 
-import cupy as cp
 from matplotlib.cbook import file_requires_unicode
 import numpy as np
 from lisatools.sensitivity import get_sensitivity
 from lisatools.utils.constants import PC_SI, YRSID_SI
 from bbhx.waveformbuild import BBHWaveformFD
 
-use_gpu = True
+use_gpu = False
 if use_gpu:
+    import cupy as cp
     xp = cp
 else:
     xp = np
