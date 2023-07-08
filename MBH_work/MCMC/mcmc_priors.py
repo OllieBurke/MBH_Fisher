@@ -1,3 +1,6 @@
+"""
+God awful function to set up uniform priors across parameter space.
+"""
 import numpy as np
 import sys
 

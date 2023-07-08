@@ -21,13 +21,13 @@ else:
 wave_gen = BBHWaveformFD(amp_phase_kwargs=dict(run_phenomd=False), use_gpu = use_gpu)
 
 # set parameters
-M = 2e6
-q = 3.0
-a1 = 0.2
-a2 = 0.4
-inc = np.pi/3.
+M = 2e6 # total mass
+q = 3.0 # mass ratio (m1/m2)
+a1 = 0.2 # Spin parameter of body 1
+a2 = 0.4 # Spin parameter of body 2
+inc = np.pi/3. # inclination
 
-dist_Gpc = 20.0 #18e3  * PC_SI * 1e6 # 3e3 in Mpc
+dist_Gpc = 20.0  # Distance in Gpc
 phi_ref = np.pi # phase at f_ref
 lam = np.pi/5.  # ecliptic longitude
 beta = np.pi/4.  # ecliptic latitude
