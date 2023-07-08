@@ -1,3 +1,8 @@
+# specific to this repository
+*.h5
+*.npy
+*.pdf
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
