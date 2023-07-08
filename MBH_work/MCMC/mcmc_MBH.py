@@ -1,7 +1,6 @@
 import os
 import sys
 import numpy as np
-import cupy as cp
 import matplotlib.pyplot as plt
 from bbhx.waveformbuild import BBHWaveformFD
 sys.path.append("../Fisher_Matrix")
@@ -17,8 +16,9 @@ N_channels = 2
 channel = ["A","E"]
 sens_fn_calls = ["noisepsd_AE","noisepsd_AE"]
 
-use_gpu = True
+use_gpu = False
 if use_gpu:
+    import cupy as cp
     xp = cp
 else:
     xp = np
@@ -51,7 +51,7 @@ def lpost(params):
     '''
     Compute log posterior
     '''
-    if cp.isinf(lprior(params)):
+    if xp.isinf(lprior(params)):
         print("Prior returns -\infty")
         return -np.inf
     else:
@@ -67,7 +67,7 @@ a2 = 0.4
 inc = np.pi/3.
 
 dist_Gpc = 20.0 #18e3  * PC_SI * 1e6 # 3e3 in Mpc
-phi_ref = 0.0 # phase at f_ref
+phi_ref = np.pi # phase at f_ref
 lam = np.pi/5.  # ecliptic longitude
 beta = np.pi/4.  # ecliptic latitude
 psi = np.pi/6.  # polarization angle
@@ -80,7 +80,7 @@ params = np.array([M, q, a1, a2, inc, dist_Gpc, phi_ref, lam,beta,psi,t_ref])
 N_params = len(params)
 
 delta_f = 1e-5                  
-freq = cp.arange(1e-4,1e-1,delta_f)
+freq = xp.arange(1e-4,1e-1,delta_f)
 
 kwargs = {"freq" : freq,
           "delta_f" : delta_f,
@@ -108,29 +108,30 @@ print("Total SNR for A, E, T is given by", xp.sum(SNR2_AET)**(1/2))
 
 data_f_AET = MBH_AET 
 
+np.random.seed(1234)
 ##===========================MCMC Settings (change this)============================
-iterations = 40000 #10000  # The number of steps to run of each walker
+iterations = 3000 #10000  # The number of steps to run of each walker
 burnin = 0
 nwalkers = 50  #50 #members of the ensemble, like number of chains
 
 # n = 0
-d = 0 
+d = 1 
 
 #here we should be shifting by the *relative* error! 
 
-start_M = M*(1. + d * 1e-3 * np.random.randn(nwalkers,1))   # changed to 1e-6 careful of starting points! Before I started on secondaries... haha.
-start_q = q*(1. + d * 1e-3 * np.random.randn(nwalkers,1))
-start_a1 = a1*(1. + d * 1e-3 * np.random.randn(nwalkers,1))
-start_a2 = a2*(1. + d * 1e-3 * np.random.randn(nwalkers, 1))
-start_inc = inc*(1. + d * 1e-3 * np.random.randn(nwalkers, 1))
-start_dist_Gpc = dist_Gpc*(1. + d * 1e-3 * np.random.randn(nwalkers, 1))
+start_M = M*(1. + d * 1e-4 * np.random.randn(nwalkers,1))   # changed to 1e-6 careful of starting points! Before I started on secondaries... haha.
+start_q = q*(1. + d * 1e-4 * np.random.randn(nwalkers,1))
+start_a1 = a1*(1. + d * 1e-4 * np.random.randn(nwalkers,1))
+start_a2 = a2*(1. + d * 1e-4 * np.random.randn(nwalkers, 1))
+start_inc = inc*(1. + d * 1e-4 * np.random.randn(nwalkers, 1))
+start_dist_Gpc = dist_Gpc*(1. + d * 1e-4 * np.random.randn(nwalkers, 1))
 
-start_phi_ref = phi_ref*(1. + d * 1e-3 * np.random.randn(nwalkers,1))
-start_lam = lam*(1. + d * 1e-3 * np.random.randn(nwalkers,1))
-start_beta = beta*(1. + d * 1e-3 * np.random.randn(nwalkers,1))
-start_psi = psi*(1. + d * 1e-3 * np.random.randn(nwalkers,1))
+start_phi_ref = phi_ref*(1. + d * 1e-4 * np.random.randn(nwalkers,1))
+start_lam = lam*(1. + d * 1e-4 * np.random.randn(nwalkers,1))
+start_beta = beta*(1. + d * 1e-4 * np.random.randn(nwalkers,1))
+start_psi = psi*(1. + d * 1e-4 * np.random.randn(nwalkers,1))
 
-start_t_ref = t_ref*(1. + d * 1e-3 * np.random.randn(nwalkers, 1))
+start_t_ref = t_ref*(1. + d * 1e-7 * np.random.randn(nwalkers, 1))
 
 start = np.hstack((start_M,start_q, start_a1, start_a2, start_inc, start_dist_Gpc, start_phi_ref, start_lam, start_beta, start_psi, start_t_ref))
 
@@ -139,20 +140,24 @@ if np.size(start.shape) == 1:
     ndim = 1
 else:
     ndim = start.shape[-1]
-
-print("Should be zero if there is no noise", llike(start[0]))
 breakpoint()
-from mcmc_func_forwards import *   # Input prior knowledge
+from mcmc_priors import lprior   # Input prior knowledge
+print("Should be zero if there is no noise", lpost(start[0]))
 
-os.chdir('/home/ad/burkeol/work/MBH_work/MCMC/mcmc_results')
+os.chdir('/Users/oburke/Documents/LISA_Science/Projects/MBHs/MBH_Fisher/MBH_work/MCMC/mcmc_results')
 moves_stretch = emcee.moves.StretchMove(a=2)  
 fp = "test_MBH_mcmc.h5" 
 backend = emcee.backends.HDFBackend(fp)
-start = backend.get_last_sample() #Continue
-#backend.reset(nwalkers, ndim) #Start New
+#start = backend.get_last_sample() #Continue
+backend.reset(nwalkers, ndim) #Start New
 
-sampler = emcee.EnsembleSampler(nwalkers, ndim, lpost, 
+from multiprocessing import (get_context,cpu_count)
+N_cpus = cpu_count()
+
+pool = get_context("fork").Pool(N_cpus)        # M1 chip -- allows multiprocessing
+
+sampler = emcee.EnsembleSampler(nwalkers, ndim, lpost, pool = pool,  
                                 backend=backend, moves = moves_stretch)
-
+breakpoint()
 sampler.run_mcmc(start,iterations, progress = True, tune=True)
 

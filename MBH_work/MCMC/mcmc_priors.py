@@ -1,14 +1,9 @@
-
 import numpy as np
-import cupy as cp
 import sys
-sys.path.append("/home/ad/burkeol/work/EMRI_Lensing/utils")
-from settings import (M, mu, a, p0, e0, iota0, Y0,
-                      dist, Phi_phi0, Phi_theta0,
-                      Phi_r0, qS, phiS, qK, phiK)
 
-use_gpu = True
+use_gpu = False
 if use_gpu:
+    import cupy as cp
     xp = cp
 else:
     xp = np
@@ -21,8 +16,6 @@ q_high = 20
 
 a_low = 0 
 a_high = 1
-
-np.array([M, q, a1, a2, inc, dist_Gpc, phi_ref, lam,beta,psi,t_ref]) 
 
 inc_low  = 0.0
 inc_high = np.pi
@@ -41,6 +34,9 @@ beta_high = xp.pi/2
 
 psi_low = 0.0
 psi_high = xp.pi
+
+t_ref_low = 0
+t_ref_high = 2*np.pi*1e7
 
 def lprior_M(M,M_low, M_high):
     if M < M_low or M > M_high:
@@ -99,58 +95,38 @@ def lprior_lam(lam, lam_low, lam_high):
     else:
         return 0
 
-def lprior_lam(lam, lam_low, lam_high):
-    if lam < lam_low or lam > lam_high:
-        print("the parameter", lam, "has failed")
-        return -xp.inf
-    else:
-        return 0
-def lprior_mu_pos(mu_pos,mu_pos_low, mu_pos_high):
-    if mu_pos < mu_pos_low  or mu_pos > mu_pos_high:
-        print("mu_pos has failed")
+def lprior_beta(beta, beta_low, beta_high):
+    if beta < beta_low or beta > beta_high:
+        print("the parameter", beta, "has failed")
         return -xp.inf
     else:
         return 0
 
-def lprior_mu_neg(mu_neg, mu_neg_low, mu_neg_high):
-    if mu_neg < mu_neg_low  or mu_neg > mu_neg_high:
-        print("mu_neg has failed")
+def lprior_psi(psi, psi_low, psi_high):
+    if psi < psi_low or psi > psi_high:
+        print("the parameter", psi, "has failed")
         return -xp.inf
     else:
         return 0
 
-def lprior_y(y, y_low, y_high):
-    if y < y_low  or y > y_high:
-        print("y has failed")
-        return -xp.inf
-    else:
-        return 0
-
-
-def lprior_td(td, td_low, td_high):
-    if td < td_low  or td > td_high:
-        print("td has failed")
+def lprior_t_ref(t_ref, t_ref_low, t_ref_high):
+    if t_ref < t_ref_low or t_ref > t_ref_high:
+        print("the parameter", psi, "has failed")
         return -xp.inf
     else:
         return 0
 
 def lprior(params):
     log_prior = (lprior_M(params[0],M_low, M_high)+ 
-                lprior_mu(params[1],mu_low, mu_high) +
-                lprior_a(params[2],a_low, a_high) + 
-                lprior_p0(params[3],p0_low, p0_high) +
-                lprior_e0(params[4],e0_low,e0_high)  + 
-                lprior_Y0(params[5],Y0_low, Y0_high) +
-                # lprior_D(params[6],D_low, D_high) +
-                lprior_angle(params[6], 0, cp.pi) +
-                lprior_angle(params[7],angle_low, angle_high) +
-                lprior_angle(params[8],0, cp.pi) +
-                lprior_angle(params[9],angle_low, angle_high) +
-                lprior_angle(params[10],angle_low, angle_high) +
-                lprior_angle(params[11],angle_low, angle_high) + 
-                lprior_angle(params[12],angle_low, angle_high) + 
-                lprior_y(params[13], y_low, y_high) +
-                lprior_td(params[14],td_low, td_high))
+                lprior_q(params[1],q_low, q_high) +
+                lprior_a1(params[2],a_low, a_high) + 
+                lprior_a2(params[3],a_low, a_high) + 
+                lprior_inc(params[4],inc_low, inc_high) +
+                lprior_dist(params[5],dist_low,dist_high)  + 
+                lprior_lam(params[6],lam_low, lam_high) +
+                lprior_beta(params[7],beta_low, beta_high) +
+                lprior_psi(params[8],psi_low, psi_high) +
+                lprior_t_ref(params[9],t_ref_low, t_ref_high)) 
     if xp.isinf(log_prior):
         return -xp.inf
     return log_prior
