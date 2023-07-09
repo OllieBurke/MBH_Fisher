@@ -98,7 +98,6 @@ def vectorised_fisher_matrix(M, q, a1, a2, inc, dist_Gpc, phi_ref, lam,beta,psi,
     """
     Build the fisher matrix. Inputs parameters, outputs fisher matrix (NOT covariance matrix)
     """
-    import time
 
     delta_f = kwargs["delta_f"]
     PSD_AET_arr = kwargs["PSD_ARR"] 

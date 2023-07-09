@@ -24,12 +24,10 @@ N_channels = 2
 channel = ["A","E"]
 sens_fn_calls = ["noisepsd_AE","noisepsd_AE"]
 
-
 wave_gen = BBHWaveformFD(amp_phase_kwargs=dict(run_phenomd=False), use_gpu = use_gpu)
 
 nevents = int(1e5)
 
-# set parameters
 
 # we're just going to use uniform distributions on most of these, except log-uniform on mass and distance
 
@@ -71,22 +69,6 @@ PSD_AET = [get_sensitivity(freq, sens_fn = PSD_choice) for PSD_choice in sens_fn
 kwargs['PSD'] = PSD_AET
 kwargs['PSD_ARR'] = xp.array(PSD_AET)
 
-# def get_snr_and_fish(params_here):   
-#     MBH_AET = MBH_f(*params_here, **kwargs)
-#     outputs = np.zeros(1 + N_params * (N_params + 1) // 2)
-#     SNR2_AET = xp.asarray([inner_prod(MBH_AET[i],MBH_AET[i],PSD_AET[i],delta_f) for i in range(N_channels)])
-#     total_snr = xp.sum(SNR2_AET)**(1/2)
-#     outputs[-1] = total_snr
-
-#     gamma_AE = build_fish_matrix(*params_here, return_sparse=True, **kwargs)
-#     outputs[:-1] = gamma_AE#.get()
-#     return outputs
-
-# with Pool(20) as p:
-#     results = list(tqdm(p.imap(get_snr_and_fish, params), total=nevents))
-
-# calculate the SNRs first
-
 batch_size = 500
 nbatches = nevents // batch_size
 import time
@@ -103,15 +85,8 @@ for batchnum in tqdm(range(nbatches)):
 
 
 for event_num in tqdm(range(nevents)):
-
-    # gamma_AE = build_fish_matrix(*params_here, return_sparse=True, **kwargs)
     gamma_AE_fast = vectorised_fisher_matrix(*params_here, **kwargs)
-    # print(gamma_AE)
-    # print(gamma_AE_fast)
-    # print(gamma_AE_fast / gamma_AE)
-    # breakpoint()
     fish_arr[event_num, :-1] = gamma_AE_fast.get()
-
     if event_num % 1000 == 0:
         np.save("./vectorised_fisher_values.npy", fish_arr)
 
