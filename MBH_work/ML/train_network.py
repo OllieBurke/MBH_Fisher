@@ -6,18 +6,25 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import torch
 
-device = "cuda:1"
+device = "cuda:0"
 
-parameters = pd.read_csv("../Fisher_Matrix/vectorised_params_fixlim_big.csv")
-fish_data = np.load("../Fisher_Matrix/vectorised_fisher_values_fixlim_big.npy")
+parameters = pd.read_csv("../Fisher_Matrix/data/1e6.csv")
+fish_data = np.load("../Fisher_Matrix/data/1e6_fish.npy")
 
 try:
     keeplim = np.where(fish_data[:,0] ==0)[0][0]
 except:
     keeplim = fish_data.shape[0]
 print(f"Chucking after the {keeplim}'th sample")
+
+fish_data = fish_data[:,:-1] / fish_data[:,-1][:,None] **2
+
 xdata = torch.as_tensor(parameters.to_numpy()[:keeplim], device=device)
 ydata = torch.as_tensor(fish_data[:keeplim][:,:-1])
+
+# we symlog the data
+signs = torch.sign(ydata)
+ydata = signs * torch.log(torch.abs(ydata))
 
 # define a rescaler, which handles the scaling of input data to facilitate training
 rescaler = ZScoreRescaler(xdata, ydata)#, yfunctions=[torch.log, torch.exp])
@@ -30,15 +37,15 @@ xtrain, xtest, ytrain, ytest = train_test_split([xdata, ydata], train_fraction)
 model = LinearModel(
     in_features=xdata.shape[1],
     out_features=fish_data.shape[1]-1,
-    neurons=[128, ] * 6,
+    neurons=[256, ] * 20,
     activation=torch.nn.SiLU,
     rescaler=rescaler,
-    name="1e6"
+    name="snr_res_f1e-5_symlog"
 ).double()
 
 model.set_device(device)
 
-optimiser = torch.optim.Adam(model.parameters(), lr=1e-4)
+optimiser = torch.optim.Adam(model.parameters(), lr=5e-6)
 
 print("Training points: ", xtrain.shape[0])
 
@@ -46,7 +53,7 @@ train(
     model,
     data=[xtrain, ytrain, xtest, ytest],
     n_epochs=10000,
-    n_batches=20,
+    n_batches=500,
     loss_function=torch.nn.L1Loss(),
     optimiser=optimiser,
     update_every=1000,
@@ -54,14 +61,25 @@ train(
 )
 
 ypred = model.run_on_dataset(xtest)
-percerrs = np.log10(np.abs((1 - ypred/ytest).cpu().numpy()))
+print(ypred)
+percerrs = np.log10(abs(ypred/ytest).cpu().numpy())
 # list_params = ['M','q','a1','a2','inc', 'dist_Gpc', 'phi_ref', 'lambda', 'beta', 'psi', 't_ref']
-
+print(percerrs)
+breakpoint()
 plt.figure(dpi=200)
 for i in range(fish_data.shape[1]-1):
     plt.hist(percerrs[:,i], bins='auto', density=True, histtype="step")#, label=list_params[i])
 # plt.legend()
 plt.xlabel(r'$\log_{10}(\mathrm{Percent Error})$')
+# plt.yscale('log')
 plt.savefig(f'models/{model.name}/performance_hist.png')
-plt.xlim(-3, 3)
-plt.savefig(f'models/{model.name}/performance_hist_zoom.png')
+plt.close()
+
+percerrs = abs(ypred/ytest - 1).cpu().numpy()
+plt.figure(dpi=200)
+for i in range(fish_data.shape[1]-1):
+    plt.plot(np.sort(percerrs[:,i]), np.linspace(0, 1, percerrs.shape[0], endpoint=False))
+plt.xlabel('Fractional error (pred/truth)')
+plt.ylabel('CDF')
+plt.xscale('log')
+plt.savefig(f'models/{model.name}/empirical_cdf.png')

@@ -60,17 +60,17 @@ def inner_prod(signal_1_f,signal_2_f,PSD, delta_f):
 SNR2_AET = xp.asarray([inner_prod(MBH_AET[i],MBH_AET[i],PSD_AET[i],delta_f) for i in range(N_channels)])
 
 for i in range(N_channels):
-    print("For channel {}, we observe SNR = {}".format(channel,SNR2_AET[i]**(1/2)))
+    print("For channel {}, we observe SNR = {}".format(channel[i],SNR2_AET[i]**(1/2)))
 
 print("Total SNR for A, E, T is given by", xp.sum(SNR2_AET)**(1/2))
 # ==================== Fisher matrix =======================#
 
-gamma_AE = build_fish_matrix(*params, **kwargs)
-
+gamma_AE = build_fish_matrix(*params, return_sparse=False, **kwargs)
+breakpoint()
 param_cov_AE = np.linalg.inv(gamma_AE)
 
-os.chdir("FM_results")
-np.save("Param_Cov_AE.npy",param_cov_AE)
+# os.chdir("FM_results")
+# np.save("Param_Cov_AE.npy",param_cov_AE)
 delta_theta = np.sqrt(np.diag(param_cov_AE))
 list_params = ['M','q','a1','a2','inc', 'dist_Gpc', 'phi_ref', 'lambda', 'beta', 'psi', 't_ref']
 

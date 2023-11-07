@@ -18,8 +18,8 @@ wave_gen = BBHWaveformFD(amp_phase_kwargs=dict(run_phenomd=False), use_gpu = use
 # set parameters
 f_ref = 0.0  # let phenom codes set f_ref -> fmax = max(f^2A(f))
 phi_ref = 0.0 # phase at f_ref
-m1 = 1e6
-m2 = 1e6
+m1 = 1e8
+m2 = 1e8
 a1 = 0.2
 a2 = 0.4
 dist = 18e3  * PC_SI * 1e6 # 3e3 in Mpc
@@ -30,7 +30,7 @@ psi = np.pi/6.  # polarization angle
 t_ref = 1.0 * YRSID_SI  # t_ref  (in the SSB reference frame)
 
 # Spacing in frequency. Equals 1/T_obs, linear spacing
-delta_f = 1e-5                  
+delta_f = 1e-6              
 freq = cp.arange(1e-4,1e-1,delta_f)
 
 # Declare number of modes to use 
@@ -72,11 +72,10 @@ wave_A_td = (delta_t)**-1 * xp.fft.irfft(MBH_AET[0]) # Be careful, numpys conven
 t = np.arange(0,len(wave_A_td)*delta_t, delta_t)
 wave_A_td_np = xp.asnumpy(wave_A_td)
 
-os.chdir('/home/ad/burkeol/work/MBH_work/Exploratory_Work/plots')
 plt.plot(t/60/60,wave_A_td_np, label = 'TD waveform')
 plt.xlabel(r'Time [hours]',fontsize = 16)
 plt.ylabel(r'h^{(A)}(t)',fontsize = 16)
 plt.title(r'Response function of MBH - A channel', fontsize = 16)
 plt.tight_layout()
-plt.savefig("MBH_TD.pdf")
+plt.savefig("MBH_TD.png")
 plt.clf()
